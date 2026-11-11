@@ -78,18 +78,20 @@ Tem dois tipos:
 
 Rodam no GitHub Actions a cada push.
 
-## Algumas decisões
+## Notas
 
-- **Minimal API com `TypedResults`.** Cada endpoint declara no tipo de retorno o que pode devolver (`Results<Ok<...>, NotFound>`), e o OpenAPI sai certo sem anotação extra.
-- **Jogador é o id do log, não o nome.** No meu servidor tem vários "Survivor" diferentes, e o mesmo jogador às vezes aparece como "Nome (2)".
-- **Uma morte, várias linhas.** O DayZ escreve a mesma morte em até três linhas, em ordem variada. O parser marca o jogador como morto até ele conectar de novo, e as outras linhas só completam os dados.
-- **Importação idempotente.** O nome de cada arquivo importado fica salvo (índice único). Cada arquivo entra numa transação: ou entra tudo, ou nada.
-- **`CultureInfo.InvariantCulture` nas distâncias.** Num Windows em português, `double.Parse("41.09")` sem isso lê o ponto como separador de milhar.
-- **Consultas.** Filtro, ordem e paginação são feitos na entidade antes de montar o DTO, senão o EF Core não consegue traduzir pra SQL.
-- **`EnsureCreated` em vez de migrations.** O banco é local, de um processo só, e o esquema é pequeno. Se crescer, troco por migrations.
-- **Comparação da chave** com `CryptographicOperations.FixedTimeEquals`, pra não vazar nada pelo tempo de resposta.
+As regras de leitura do log são as mesmas do dayz-log-analyzer (jogador pelo id, a mesma morte escrita em várias linhas contando uma vez só). Importei os mesmos 5 dias de log do meu servidor nos dois e os números bateram: 12 jogadores, 10 mortes, 72h26 jogadas. A importação leva por volta de 1 segundo.
 
-Com os 26 dias de log do meu servidor, a importação leva cerca de 1 segundo e os números batem com os do dayz-log-analyzer.
+Cada arquivo importado tem o nome salvo com índice único e entra numa transação, então pode chamar o `POST /api/import` quantas vezes quiser que não duplica nada.
+
+Coisas que me pegaram no caminho:
+
+- três consultas davam erro 500 porque eu fazia o `Where`/`OrderBy` depois de montar o DTO, e o EF Core não consegue traduzir isso pra SQL. Agora filtra e pagina a entidade primeiro e monta o DTO no final;
+- no Windows em português, `double.Parse("41.09")` lê o ponto como separador de milhar, por isso as distâncias usam `CultureInfo.InvariantCulture`;
+- o NuGet tentou instalar os pacotes da versão 11, que não rodam no .NET 10, tive que fixar na 10.0.15;
+- o .NET 10 mudou o executor do `dotnet test`, por isso o `global.json` tem o `"runner": "Microsoft.Testing.Platform"`.
+
+Usei `EnsureCreated` e não migrations porque o banco é local e o esquema é pequeno. Se crescer eu troco.
 
 ## Estrutura
 
@@ -103,7 +105,3 @@ src/DayzStats.Api/
 tests/DayzStats.Api.Tests/    xUnit v3
 examples/                     log de exemplo
 ```
-
----
-
-Eduardo Dias · [portfólio](https://edudiasr.github.io/portfolio-web/) · [LinkedIn](https://www.linkedin.com/in/eduardo-dias-99b90a44a)

@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DayzStats.Api/DayzStats.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DayzStats.Api.Tests/DayzStats.Api.Tests.csproj" />
+  </Folder>
+</Solution>
